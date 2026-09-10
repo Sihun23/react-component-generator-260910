@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { PromptInput } from './components/PromptInput';
 import { ComponentCard } from './components/ComponentCard';
 import { useComponentGenerator } from './hooks/useComponentGenerator';
+import { loadState, saveProvider } from './lib/storage';
+import { loadApiKey, saveApiKey } from './lib/apiKeyStorage';
 import type { Provider } from './types';
 import './App.css';
 
@@ -11,17 +13,17 @@ const PROVIDER_CONFIG = {
 } as const;
 
 function App() {
-  const [apiKey, setApiKey] = useState('');
+  const [provider, setProvider] = useState<Provider>(() => loadState()?.provider ?? 'google');
+  const [apiKey, setApiKey] = useState(() => loadApiKey(loadState()?.provider ?? 'google'));
   const [showKey, setShowKey] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [provider, setProvider] = useState<Provider>('google');
   const [envKeys, setEnvKeys] = useState<Record<Provider, boolean>>({
     anthropic: false,
     google: false,
   });
   const [keyNotice, setKeyNotice] = useState<string | null>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
-  const { components, isLoading, error, generate, removeComponent, clearAll } =
+  const { components, isLoading, error, generate, removeComponent, clearAll, restoredIds } =
     useComponentGenerator();
 
   useEffect(() => {
@@ -64,7 +66,15 @@ function App() {
 
   const handleProviderChange = (newProvider: Provider) => {
     setProvider(newProvider);
-    setApiKey('');
+    saveProvider(newProvider);
+    // 프로바이더별로 키를 분리 보관하므로, 전환 시 해당 프로바이더의 키로 교체한다.
+    // 다른 프로바이더의 키가 남아 잘못된 곳으로 전송되는 것을 막는다.
+    setApiKey(loadApiKey(newProvider));
+  };
+
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value);
+    saveApiKey(provider, value);
   };
 
   return (
@@ -113,7 +123,7 @@ function App() {
                       id="api-key"
                       type={showKey ? 'text' : 'password'}
                       value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
                       placeholder={
                         hasEnvKey ? '서버 키 사용 중' : PROVIDER_CONFIG[provider].placeholder
                       }
@@ -129,7 +139,12 @@ function App() {
                   <p className="field-note">
                     {hasEnvKey
                       ? '서버의 .env 키를 사용합니다. 여기에 입력하면 그 키를 대신 씁니다.'
-                      : '키는 이 브라우저에만 남고 서버에 저장되지 않습니다.'}
+                      : '키는 이 탭에만 저장되고 탭을 닫으면 지워집니다.'}
+                  </p>
+                  <p className="field-warning">
+                    미리보기는 생성된 코드를 이 페이지에서 그대로 실행합니다. 그 코드는
+                    저장된 키를 읽을 수 있으니, 신뢰할 수 없는 프롬프트를 쓸 때는 키를
+                    직접 입력하지 말고 서버 .env를 사용하세요.
                   </p>
                 </div>
               </div>
@@ -180,6 +195,7 @@ function App() {
                 onRemove={removeComponent}
                 onRegenerate={handleGenerate}
                 isLoading={isLoading}
+                restored={restoredIds.has(component.id)}
               />
             ))}
           </div>
