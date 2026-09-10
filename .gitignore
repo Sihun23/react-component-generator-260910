@@ -34,3 +34,6 @@ dist-ssr
 
 # playwright-cli 세션 산출물
 .playwright-cli/
+
+# OMC 세션 로컬 상태
+.omc/
