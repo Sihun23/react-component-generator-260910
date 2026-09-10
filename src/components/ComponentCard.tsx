@@ -12,66 +12,87 @@ interface ComponentCardProps {
 
 type Tab = 'preview' | 'code';
 
-export function ComponentCard({ component, onRemove, onRegenerate, isLoading }: ComponentCardProps) {
+export function ComponentCard({
+  component,
+  onRemove,
+  onRegenerate,
+  isLoading,
+}: ComponentCardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('preview');
   const [previewKey, setPreviewKey] = useState(0);
+  const panelId = `panel-${component.id}`;
   const createdAt = component.createdAt.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
   });
 
   return (
-    <div className="component-card">
-      <div className="card-header">
-        <div className="card-title-group">
-          <span>{createdAt}</span>
+    <article className="card">
+      <div className="card-head">
+        <div className="card-title">
           <p className="card-prompt">{component.prompt}</p>
+          <span className="card-time">{createdAt}</span>
         </div>
-        <div className="card-actions">
+
+        <div className="segmented" data-active={activeTab} role="tablist">
+          <span className="segmented-thumb" aria-hidden="true" />
           <button
-            className="btn-refresh"
-            onClick={() => setPreviewKey((k) => k + 1)}
-            title="미리보기 새로고침"
-            aria-label="미리보기 새로고침"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'preview'}
+            aria-controls={panelId}
+            className="segment"
+            onClick={() => setActiveTab('preview')}
           >
-            ↻
+            미리보기
           </button>
           <button
-            className="btn-regenerate"
-            onClick={() => onRegenerate(component.prompt)}
-            disabled={isLoading}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'code'}
+            aria-controls={panelId}
+            className="segment"
+            onClick={() => setActiveTab('code')}
           >
-            {isLoading ? '생성 중...' : '재생성'}
-          </button>
-          <button
-            className="btn-remove"
-            onClick={() => onRemove(component.id)}
-          >
-            삭제
+            코드
           </button>
         </div>
       </div>
-      <div className="card-tabs">
-        <button
-          className={`tab ${activeTab === 'preview' ? 'tab--active' : ''}`}
-          onClick={() => setActiveTab('preview')}
-        >
-          미리보기
-        </button>
-        <button
-          className={`tab ${activeTab === 'code' ? 'tab--active' : ''}`}
-          onClick={() => setActiveTab('code')}
-        >
-          코드
-        </button>
-      </div>
-      <div className="card-content">
+
+      <div className="card-body" id={panelId} role="tabpanel" tabIndex={-1}>
         {activeTab === 'preview' ? (
           <LivePreview key={previewKey} code={component.code} />
         ) : (
           <CodeView code={component.code} />
         )}
       </div>
-    </div>
+
+      <div className="card-foot">
+        {activeTab === 'preview' && (
+          <button
+            type="button"
+            className="btn btn-plain"
+            onClick={() => setPreviewKey((k) => k + 1)}
+          >
+            미리보기 새로고침
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn btn-plain"
+          onClick={() => onRegenerate(component.prompt)}
+          disabled={isLoading}
+        >
+          {isLoading ? '만드는 중' : '다시 만들기'}
+        </button>
+        <button
+          type="button"
+          className="btn btn-plain btn-danger"
+          onClick={() => onRemove(component.id)}
+        >
+          삭제
+        </button>
+      </div>
+    </article>
   );
 }

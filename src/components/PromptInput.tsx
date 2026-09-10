@@ -24,22 +24,16 @@ export function PromptInput({ onGenerate, isLoading }: PromptInputProps) {
     }
   };
 
-  const handleExampleClick = (example: string) => {
-    setPrompt(example);
-  };
-
   return (
-    <div className="prompt-section">
-      <div className="prompt-heading">
-        <span className="panel-kicker">Prompt</span>
-        <h2>무엇을 만들까요?</h2>
-      </div>
+    <div className="prompt">
+      <h1 className="display">무엇을 만들까요?</h1>
+
       <form onSubmit={handleSubmit} className="prompt-form">
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="예: 고객 목록 테이블 위에 들어갈 검색 필터 바를 만들어줘. 상태, 담당자, 날짜 범위 필터가 필요해."
-          className="prompt-textarea"
+          placeholder="고객 목록 위에 들어갈 검색 필터 바. 상태, 담당자, 날짜 범위를 고를 수 있게."
+          className="prompt-field"
           rows={3}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -47,26 +41,25 @@ export function PromptInput({ onGenerate, isLoading }: PromptInputProps) {
             }
           }}
         />
-        <button
-          type="submit"
-          className="btn-generate"
-          disabled={!prompt.trim() || isLoading}
-        >
-          {isLoading ? (
-            <span className="loading-spinner">생성 중...</span>
-          ) : (
-            '컴포넌트 생성'
-          )}
-        </button>
+        <div className="prompt-actions">
+          <span className="hint" aria-hidden="true">⌘ + Enter</span>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={!prompt.trim() || isLoading}
+          >
+            {isLoading ? '만드는 중' : '컴포넌트 만들기'}
+          </button>
+        </div>
       </form>
-      <div className="prompt-examples">
-        <span className="examples-label">예시 프롬프트</span>
+
+      <div className="examples">
         {EXAMPLES.map((example) => (
           <button
             key={example}
-            className="example-chip"
-            onClick={() => handleExampleClick(example)}
             type="button"
+            className="chip"
+            onClick={() => setPrompt(example)}
           >
             {example}
           </button>
