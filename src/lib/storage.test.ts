@@ -57,8 +57,17 @@ describe('storage', () => {
     expect(loadState()).toBeNull();
   });
 
-  it('형태가 어긋난 데이터는 null을 반환한다', () => {
+  it('components 필드가 없어도 provider는 살리고 빈 목록으로 시작한다', () => {
     localStorage.setItem('rcg:state:v1', JSON.stringify({ provider: 'google' }));
+
+    expect(loadState()).toEqual({ provider: 'google', components: [] });
+  });
+
+  it('provider가 유효하지 않으면 null을 반환한다', () => {
+    localStorage.setItem(
+      'rcg:state:v1',
+      JSON.stringify({ provider: 'openai', components: [] })
+    );
 
     expect(loadState()).toBeNull();
   });
@@ -139,6 +148,51 @@ describe('storage', () => {
       saveComponents([makeComponent('a')]);
 
       expect(loadState()?.provider).toBe('google');
+    });
+  });
+
+  describe('리뷰 지적 반영', () => {
+    it('일부 항목이 손상돼도 성한 항목과 provider를 살린다', () => {
+      localStorage.setItem(
+        'rcg:state:v1',
+        JSON.stringify({
+          provider: 'anthropic',
+          components: [
+            { id: 'a', prompt: 'A', code: 'c', createdAt: '2026-09-10T01:00:00.000Z' },
+            { id: 'broken' },
+            { id: 'b', prompt: 'B', code: 'c', createdAt: '2026-09-10T01:00:00.000Z' },
+          ],
+        })
+      );
+
+      const loaded = loadState();
+
+      expect(loaded?.provider).toBe('anthropic');
+      expect(loaded?.components.map((c) => c.id)).toEqual(['a', 'b']);
+    });
+
+    it('components가 배열이 아니어도 provider는 살린다', () => {
+      localStorage.setItem(
+        'rcg:state:v1',
+        JSON.stringify({ provider: 'anthropic', components: 'not-an-array' })
+      );
+
+      expect(loadState()).toEqual({ provider: 'anthropic', components: [] });
+    });
+
+    it('상한을 넘겨 저장된 데이터를 읽을 때도 상한을 적용한다', () => {
+      const many = Array.from({ length: MAX_COMPONENTS + 5 }, (_, i) => ({
+        id: `id-${i}`,
+        prompt: 'p',
+        code: 'c',
+        createdAt: '2026-09-10T01:00:00.000Z',
+      }));
+      localStorage.setItem(
+        'rcg:state:v1',
+        JSON.stringify({ provider: 'google', components: many })
+      );
+
+      expect(loadState()?.components).toHaveLength(MAX_COMPONENTS);
     });
   });
 });

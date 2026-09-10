@@ -57,17 +57,29 @@ vitest + jsdom + Testing Library. 셋업은 `src/test/setup.ts`.
 ### 생성된 컴포넌트는 신뢰할 수 없는 코드다
 
 react-live는 AI가 만든 코드를 브라우저에서 그대로 실행한다. 미리보기 영역에 앱의 실제
-상태나 키를 스코프로 주입하지 마라. 현재 `LiveProvider`에는 `scope`가 전달되지 않아
-기본 스코프(React 전역)만 노출된다. 이 상태를 유지하라.
+상태나 키를 스코프로 주입하지 마라. 현재 `LiveProvider`에는 `scope`가 전달되지 않는다.
+다만 `scope`를 비워도 생성 코드는 페이지와 같은 realm에서 돌기 때문에 전역에 접근할 수
+있다. `scope`를 비우는 것은 실수 방지이지 격리가 아니다.
+
+**복원된 카드는 코드 탭으로 연다**(`ComponentCard`의 `restored` prop). 저장된 코드가
+페이지를 여는 것만으로 실행되면, 신뢰할 수 없는 코드가 사용자 조작 없이 매 방문마다
+돌게 된다. 복원 여부는 `useComponentGenerator`의 `restoredIds`가 판단한다. 이 연결을
+끊지 마라.
 
 ### API 키는 sessionStorage에만 둔다. localStorage로 옮기지 마라
 
 키는 `lib/apiKeyStorage.ts`가 **sessionStorage**에 프로바이더별로 보관한다. 탭을 닫으면
 사라지고 다른 탭과 공유되지 않는다.
 
-**localStorage로 바꾸지 마라.** 이 앱은 AI가 생성한 코드를 react-live로 브라우저에서 그대로
-실행하므로 XSS 표면이 넓고, localStorage의 키는 스크립트 한 줄로 유출된다. 영속성을 늘리는
-변경은 노출 창을 그만큼 넓히는 변경이다.
+**남아 있는 위험을 알고 써라.** react-live는 iframe 없이 페이지와 같은 realm에서 생성 코드를
+평가한다. 따라서 생성된 컴포넌트가 `sessionStorage.getItem('rcg:keys:v1')`로 키를 읽어
+외부로 보낼 수 있다. sessionStorage를 쓴다고 이 경로가 막히지 않는다 — 공격은 탭이 열려
+있는 그 세션 안에서 일어나기 때문이다. `LiveProvider`에 `scope`를 넘기지 않는 것도 방어가
+아니다.
+
+이 위험을 감수하기로 한 결정이며(강의 데모 용도), 설정 패널에 경고 문구로 사용자에게
+알린다. 근본 차단은 미리보기를 sandboxed iframe으로 격리해야 가능하다. **localStorage로
+바꾸지 마라** — 탭을 닫아도 남게 되어 노출 창만 넓어지고 얻는 것이 없다.
 
 키가 `lib/storage.ts`(localStorage)의 상태 블롭에 섞여 들어가지 않도록 `saveState`가 필드를
 명시적으로 추리고 있고, 회귀 테스트로 고정되어 있다(lib/storage.test.ts의 "API 키는 저장하지

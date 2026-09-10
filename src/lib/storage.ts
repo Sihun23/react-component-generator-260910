@@ -47,12 +47,17 @@ export function loadState(): PersistedState | null {
   const { provider, components } = parsed as Record<string, unknown>;
 
   if (provider !== 'anthropic' && provider !== 'google') return null;
-  if (!Array.isArray(components)) return null;
-  if (!components.every(isSerializedComponent)) return null;
+
+  // 항목 하나가 손상됐다고 provider까지 버리면 사용자가 고른 설정이 조용히 초기화된다.
+  // 성한 항목만 살리고 나머지는 버린다.
+  const list = Array.isArray(components) ? components : [];
 
   return {
     provider,
-    components: components.map((c) => ({ ...c, createdAt: new Date(c.createdAt) })),
+    components: list
+      .filter(isSerializedComponent)
+      .slice(0, MAX_COMPONENTS)
+      .map((c) => ({ ...c, createdAt: new Date(c.createdAt) })),
   };
 }
 

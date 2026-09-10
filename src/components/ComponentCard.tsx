@@ -8,6 +8,8 @@ interface ComponentCardProps {
   onRemove: (id: string) => void;
   onRegenerate: (prompt: string) => void;
   isLoading: boolean;
+  /** 이전 세션에서 복원된 카드. 저장된 코드가 열자마자 실행되지 않도록 코드 탭으로 연다. */
+  restored?: boolean;
 }
 
 type Tab = 'preview' | 'code';
@@ -17,8 +19,9 @@ export function ComponentCard({
   onRemove,
   onRegenerate,
   isLoading,
+  restored = false,
 }: ComponentCardProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('preview');
+  const [activeTab, setActiveTab] = useState<Tab>(restored ? 'code' : 'preview');
   const [previewKey, setPreviewKey] = useState(0);
   const panelId = `panel-${component.id}`;
   const createdAt = component.createdAt.toLocaleTimeString('ko-KR', {

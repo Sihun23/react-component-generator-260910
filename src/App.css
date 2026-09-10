@@ -564,3 +564,13 @@
     padding: 14px;
   }
 }
+
+.field-warning {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 149, 0, 0.1);
+  border-radius: 9px;
+  color: #8a5200;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
