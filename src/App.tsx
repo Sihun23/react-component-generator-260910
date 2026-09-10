@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { PromptInput } from './components/PromptInput';
 import { ComponentCard } from './components/ComponentCard';
 import { useComponentGenerator } from './hooks/useComponentGenerator';
+import { loadState, saveProvider } from './lib/storage';
+import { loadApiKey, saveApiKey } from './lib/apiKeyStorage';
 import type { Provider } from './types';
 import './App.css';
 
@@ -11,10 +13,10 @@ const PROVIDER_CONFIG = {
 } as const;
 
 function App() {
-  const [apiKey, setApiKey] = useState('');
+  const [provider, setProvider] = useState<Provider>(() => loadState()?.provider ?? 'google');
+  const [apiKey, setApiKey] = useState(() => loadApiKey(loadState()?.provider ?? 'google'));
   const [showKey, setShowKey] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [provider, setProvider] = useState<Provider>('google');
   const [envKeys, setEnvKeys] = useState<Record<Provider, boolean>>({
     anthropic: false,
     google: false,
@@ -64,7 +66,15 @@ function App() {
 
   const handleProviderChange = (newProvider: Provider) => {
     setProvider(newProvider);
-    setApiKey('');
+    saveProvider(newProvider);
+    // 프로바이더별로 키를 분리 보관하므로, 전환 시 해당 프로바이더의 키로 교체한다.
+    // 다른 프로바이더의 키가 남아 잘못된 곳으로 전송되는 것을 막는다.
+    setApiKey(loadApiKey(newProvider));
+  };
+
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value);
+    saveApiKey(provider, value);
   };
 
   return (
@@ -113,7 +123,7 @@ function App() {
                       id="api-key"
                       type={showKey ? 'text' : 'password'}
                       value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
                       placeholder={
                         hasEnvKey ? '서버 키 사용 중' : PROVIDER_CONFIG[provider].placeholder
                       }

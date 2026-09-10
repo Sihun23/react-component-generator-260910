@@ -60,14 +60,21 @@ react-live는 AI가 만든 코드를 브라우저에서 그대로 실행한다. 
 상태나 키를 스코프로 주입하지 마라. 현재 `LiveProvider`에는 `scope`가 전달되지 않아
 기본 스코프(React 전역)만 노출된다. 이 상태를 유지하라.
 
-### API 키는 상태로만 들고, 저장하지 않는다
+### API 키는 sessionStorage에만 둔다. localStorage로 옮기지 마라
 
-`apiKey`는 `App.tsx`의 `useState`에만 있고 localStorage나 쿠키에 쓰지 않는다. 새로고침하면
-사라지는 것이 의도된 동작이다. 편의를 위해 저장하고 싶더라도 그렇게 하지 마라 — XSS 한 번에
-키가 빠져나간다.
+키는 `lib/apiKeyStorage.ts`가 **sessionStorage**에 프로바이더별로 보관한다. 탭을 닫으면
+사라지고 다른 탭과 공유되지 않는다.
 
-프로바이더를 바꾸면 입력된 키를 비운다(`handleProviderChange`, App.tsx). 다른 프로바이더의
-키가 남아 잘못된 곳으로 전송되는 것을 막는 처리이므로 제거하지 마라.
+**localStorage로 바꾸지 마라.** 이 앱은 AI가 생성한 코드를 react-live로 브라우저에서 그대로
+실행하므로 XSS 표면이 넓고, localStorage의 키는 스크립트 한 줄로 유출된다. 영속성을 늘리는
+변경은 노출 창을 그만큼 넓히는 변경이다.
+
+키가 `lib/storage.ts`(localStorage)의 상태 블롭에 섞여 들어가지 않도록 `saveState`가 필드를
+명시적으로 추리고 있고, 회귀 테스트로 고정되어 있다(lib/storage.test.ts의 "API 키는 저장하지
+않는다"). 이 테스트를 지우지 마라.
+
+프로바이더를 바꾸면 그 프로바이더의 키로 교체한다(`handleProviderChange`, App.tsx). 다른
+프로바이더의 키가 남아 잘못된 곳으로 전송되는 것을 막는 처리이므로 제거하지 마라.
 
 ### 서버 키 유무는 `/api/config`로만 판단한다
 
